@@ -1,7 +1,7 @@
 ﻿🚨 AI Code Review Bot - Your Security Guardian Angel 🤖
 Boot.dev Hackathon 2025 Entry
 🔗 GitHub: https://github.com/sgharlow/ai-pr-bot
-💬 Post: https://www.linkedin.com/in/stevengharlow/
+💬 Post: https://www.linkedin.com/feed/update/urn:li:activity:7355469371697217536/
 
 🎯 THE PROBLEM:
 That SQL injection in your code? It's already in production.
