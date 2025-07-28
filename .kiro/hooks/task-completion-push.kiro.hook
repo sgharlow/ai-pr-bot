@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Task Completion Auto-Push",
+  "description": "Automatically commits and pushes code changes to GitHub when a task is marked as completed in tasks.md",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "tasks.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A task has been completed in tasks.md. Please check in all code changes and push them to the origin repository at https://github.com/sgharlow/boot-hack.git. Use appropriate git commands to add all changes, commit with a meaningful message about the completed task, and push to origin."
+  }
+}

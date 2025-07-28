@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Repository {
+  id        String   @id @default(uuid())
+  name      String
+  owner     String
+  fullName  String   @unique
+  createdAt DateTime @default(now())
+  reviews   Review[]
+  
+  @@index([owner, name])
+}
+
+model Review {
+  id           String     @id @default(uuid())
+  repository   Repository @relation(fields: [repositoryId], references: [id])
+  repositoryId String
+  prNumber     Int
+  findings     Json
+  summary      String?
+  createdAt    DateTime   @default(now())
+  
+  @@index([repositoryId, prNumber])
+}
+
+model WebhookEvent {
+  id        String   @id @default(uuid())
+  eventType String
+  payload   Json
+  createdAt DateTime @default(now())
+  
+  @@index([eventType, createdAt])
+}

@@ -1,0 +1,40 @@
+{
+  "name": "ai-pr-bot",
+  "version": "0.1.0",
+  "description": "AI-powered code review bot for GitHub pull requests",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:migrate:dev": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@fastify/cors": "^8.4.0",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/rate-limit": "^9.1.0",
+    "@octokit/app": "^14.1.0",
+    "@octokit/rest": "^22.0.0",
+    "@prisma/client": "^5.6.0",
+    "bull": "^4.12.0",
+    "dotenv": "^16.3.1",
+    "fastify": "^4.24.3",
+    "openai": "^5.10.2",
+    "redis": "^4.6.10",
+    "zod": "^3.22.4",
+    "parse-diff": "^0.11.1",
+    "mime-types": "^2.1.35"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.9",
+    "@types/mime-types": "^2.1.4",
+    "prisma": "^5.6.0",
+    "tsx": "^4.1.4",
+    "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
