@@ -134,7 +134,10 @@ export class WebhookService {
           title: (payload as any).pull_request?.title,
           url: (payload as any).pull_request?.html_url,
           diffUrl: (payload as any).pull_request?.diff_url,
-          author: (payload as any).pull_request?.user?.login
+          author: (payload as any).pull_request?.user?.login,
+          baseBranch: (payload as any).pull_request?.base?.ref,
+          headBranch: (payload as any).pull_request?.head?.ref,
+          sha: (payload as any).pull_request?.head?.sha
         } : undefined,
         installationId: (payload as any).installation?.id,
         payload
@@ -258,13 +261,14 @@ export class WebhookService {
           pullRequest: {
             number: event.pullRequest.number,
             title: event.pullRequest.title,
-            url: event.pullRequest.url,
-            diffUrl: event.pullRequest.diffUrl,
-            author: event.pullRequest.author
+            author: event.pullRequest.author,
+            baseBranch: event.pullRequest.baseBranch,
+            headBranch: event.pullRequest.headBranch,
+            sha: event.pullRequest.sha
           },
           installationId: event.installationId,
           action: event.action,
-          timestamp: new Date().toISOString()
+          timestamp: new Date()
         },
         {
           priority: JobPriority.HIGH,

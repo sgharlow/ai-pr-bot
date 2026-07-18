@@ -22,11 +22,7 @@ export async function webhookRoutes(fastify: FastifyInstance, options: any): Pro
   });
 
   // GitHub webhook endpoint
-  fastify.post('/github', {
-    config: {
-      rawBody: true
-    }
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/github', async (request: FastifyRequest, reply: FastifyReply) => {
     await webhookService.processWebhook(request, reply);
   });
   

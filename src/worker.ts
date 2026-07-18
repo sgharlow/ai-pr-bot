@@ -1,5 +1,5 @@
 import { config } from './config/environment';
-import { createEnhancedQueueSystem, JobType } from './lib/queue-system';
+import { createEnhancedQueueSystem, JobType, JobPriority } from './lib/queue-system';
 import { GitHubClient } from './lib/github/client';
 import { EnhancedAIService } from './lib/ai-service/enhanced-ai-service';
 import { DiffAnalyzer } from './lib/github/diff-analyzer-simple';
@@ -10,15 +10,8 @@ import { FixValidator } from './lib/auto-fix/fix-validator';
 async function startWorker() {
   console.log('Starting simple worker...');
   
-  // Initialize GitHub client
-  const githubClient = new GitHubClient({
-    app: {
-      id: config.GITHUB_APP_ID,
-      privateKey: config.GITHUB_PRIVATE_KEY
-    },
-    clientId: config.GITHUB_CLIENT_ID,
-    clientSecret: config.GITHUB_CLIENT_SECRET
-  });
+  // Initialize GitHub client — GitHubAuth defaults pull app id/key/client creds from config
+  const githubClient = new GitHubClient();
 
   // Initialize AI service
   const aiService = new EnhancedAIService({
@@ -29,7 +22,7 @@ async function startWorker() {
   });
 
   // Initialize queue system dependencies
-  const diffAnalyzer = new DiffAnalyzer(githubClient);
+  const diffAnalyzer = new DiffAnalyzer();
   const codeAnalyzer = new CodeAnalyzer();
   const fixGenerator = new FixGenerator(aiService);
   const fixValidator = new FixValidator();
@@ -47,19 +40,19 @@ async function startWorker() {
       queues: {
         'pr-analysis': {
           concurrency: 2,
-          defaultPriority: 20
+          defaultPriority: JobPriority.NORMAL
         },
         'code-analysis': {
           concurrency: 3,
-          defaultPriority: 10
+          defaultPriority: JobPriority.HIGH
         },
-        'ai-review': {
+        'fix-generation': {
           concurrency: 1,
-          defaultPriority: 5
+          defaultPriority: JobPriority.HIGH
         },
-        'feedback-generation': {
+        'comment-posting': {
           concurrency: 2,
-          defaultPriority: 15
+          defaultPriority: JobPriority.NORMAL
         }
       }
     },
