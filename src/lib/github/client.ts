@@ -82,7 +82,8 @@ export class GitHubClient {
         updated_at: data.updated_at,
         mergeable: data.mergeable || undefined,
         mergeable_state: data.mergeable_state || undefined,
-        draft: data.draft
+        // Drift fix 2026-07-18: octokit types draft as optional; contract wants boolean
+        draft: data.draft ?? false
       };
     } catch (error) {
       throw this.handleError(error, `Failed to get pull request ${owner}/${repo}#${pullNumber}`);
@@ -181,7 +182,8 @@ export class GitHubClient {
       const data = response.data;
       return {
         id: data.id,
-        body: data.body,
+        // Drift fix 2026-07-18: octokit types body as optional; contract wants string
+        body: data.body ?? '',
         path: 'path' in data ? data.path : undefined,
         line: 'line' in data ? data.line : undefined,
         position: 'position' in data ? data.position : undefined,
@@ -227,7 +229,8 @@ export class GitHubClient {
         output: data.output ? {
           title: data.output.title || '',
           summary: data.output.summary || '',
-          text: data.output.text
+          // Drift fix 2026-07-18: octokit types text as string | null; contract is string | undefined
+          text: data.output.text ?? undefined
         } : undefined
       };
     } catch (error) {
@@ -265,7 +268,8 @@ export class GitHubClient {
         output: data.output ? {
           title: data.output.title || '',
           summary: data.output.summary || '',
-          text: data.output.text
+          // Drift fix 2026-07-18: octokit types text as string | null; contract is string | undefined
+          text: data.output.text ?? undefined
         } : undefined
       };
     } catch (error) {
@@ -391,7 +395,8 @@ export class GitHubClient {
         updated_at: data.updated_at,
         mergeable: data.mergeable || undefined,
         mergeable_state: data.mergeable_state || undefined,
-        draft: data.draft
+        // Drift fix 2026-07-18: octokit types draft as optional; contract wants boolean
+        draft: data.draft ?? false
       };
     } catch (error) {
       throw this.handleError(error, `Failed to create pull request in ${owner}/${repo}`);

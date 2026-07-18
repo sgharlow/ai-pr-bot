@@ -4,6 +4,12 @@ import jwt from 'jsonwebtoken';
 import { config } from '../../config/environment';
 import { GitHubConfig, InstallationAuth, GitHubError } from './types';
 
+/**
+ * The installation client type as @octokit/app v14 defines it (see the
+ * getInstallationOctokit drift note below).
+ */
+type InstallationOctokit = Awaited<ReturnType<App['getInstallationOctokit']>>;
+
 export class GitHubAuth {
   private app: App;
   private config: GitHubConfig;
@@ -32,21 +38,20 @@ export class GitHubAuth {
   }
 
   /**
-   * Gets an authenticated Octokit instance for a specific installation
+   * Gets an authenticated Octokit instance for a specific installation.
+   *
+   * Drift fixes 2026-07-18 for the installed @octokit/app v14:
+   * - The returned client is @octokit/core's Octokit (request/graphql only) —
+   *   it has no `.rest` / `.pulls` plugin surface, so the debug probes of those
+   *   properties were removed (callers already use `.request()` exclusively).
+   * - The return type is annotated via the App method's own type: TS2742 (the
+   *   inferred type referenced @octokit/app's nested @octokit/core copy, which
+   *   is not portable from this package).
    */
-  async getInstallationOctokit(installationId: number) {
+  async getInstallationOctokit(installationId: number): Promise<InstallationOctokit> {
     try {
       const installation = await this.app.getInstallationOctokit(installationId);
       console.log('[GitHubAuth] Octokit instance type:', installation.constructor.name);
-      console.log('[GitHubAuth] Has rest property:', !!installation.rest);
-      console.log('[GitHubAuth] Has pulls property:', !!installation.pulls);
-      console.log('[GitHubAuth] Direct properties:', Object.keys(installation).slice(0, 10));
-      
-      // Check if we have the pulls methods directly on the instance
-      if (installation.pulls) {
-        console.log('[GitHubAuth] Found direct pulls property');
-      }
-      
       return installation;
     } catch (error) {
       throw this.handleGitHubError(error, `Failed to get installation Octokit for installation ${installationId}`);
@@ -158,7 +163,9 @@ export class GitHubAuth {
       ];
 
       const missing: string[] = [];
-      const permissions = data.permissions || {};
+      // Drift fix 2026-07-18: octokit types permissions as a closed map of known
+      // keys; widen to a string-indexed view for this dynamic membership check.
+      const permissions: Record<string, string | undefined> = data.permissions || {};
 
       for (const permission of requiredPermissions) {
         if (!permissions[permission] || permissions[permission] === 'none') {
