@@ -1,3 +1,5 @@
+> ⚠️ **Under repair (2026-07-18)** — a portfolio audit found this repo has never compiled as committed (several modules were never pushed). A verified repair is in progress on a dedicated branch; until it lands, treat the code as design reference, not runnable. No claim without a check.
+
 🚨 AI Code Review Bot - Your Security Guardian Angel 🤖
 Boot.dev Hackathon 2025 Entry
 🔗 GitHub: https://github.com/sgharlow/ai-pr-bot
