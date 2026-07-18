@@ -1,4 +1,7 @@
-import { v4 as uuidv4 } from 'uuid';
+// Drift fix 2026-07-18: 'uuid' was imported but never declared in package.json.
+// Node >= 18 (this repo's engines floor) ships crypto.randomUUID, so no new
+// dependency is needed.
+import { randomUUID } from 'crypto';
 import { 
   FixGenerationRequest,
   GeneratedFix,
@@ -275,7 +278,7 @@ Provide your response in JSON format with the following structure:
     const endLine = request.code.endLine || startLine + originalLines - 1;
 
     return {
-      id: uuidv4(),
+      id: randomUUID(),
       issue: request.issue,
       fix: {
         type: fixType,

@@ -442,10 +442,12 @@ export class EnhancedAIService {
   }
 
   /**
-   * Determine overall impact from multiple impacts
+   * Determine overall impact from multiple impacts.
+   * Drift fix 2026-07-18: the Review contract (types.ts ReviewSchema) defines
+   * estimatedImpact as 'high' | 'medium' | 'low'; inputs here are Review metrics,
+   * so 'critical' can never occur and returning it violated the contract.
    */
-  private determineOverallImpact(impacts: string[]): 'critical' | 'high' | 'medium' | 'low' {
-    if (impacts.includes('critical')) return 'critical';
+  private determineOverallImpact(impacts: string[]): 'high' | 'medium' | 'low' {
     if (impacts.includes('high')) return 'high';
     if (impacts.includes('medium')) return 'medium';
     return 'low';
