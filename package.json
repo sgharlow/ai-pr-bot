@@ -9,7 +9,8 @@
     "dev": "tsx watch src/index.ts",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
-    "db:migrate:dev": "prisma migrate dev"
+    "db:migrate:dev": "prisma migrate dev",
+    "test": "npm run build && node --test tests/followups.test.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^8.4.0",

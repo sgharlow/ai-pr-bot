@@ -1,4 +1,10 @@
-> ⚠️ **Under repair (2026-07-18)** — a portfolio audit found this repo has never compiled as committed (several modules were never pushed). A verified repair is in progress on a dedicated branch; until it lands, treat the code as design reference, not runnable. No claim without a check.
+> **Status (2026-07-18): compiles and is CI-gated; the analysis pipeline is NOT yet live-wired.**
+> This repo previously never compiled as committed and its demo processor posted canned findings
+> without disclosure — both are documented as **finding #1 of the
+> [portfolio benchmark](https://github.com/sgharlow/ai-control-framework/tree/main/benchmarks)**,
+> the case study for why the verification gates exist. Fixed: history repaired (PR #1), demo
+> output now fail-closed behind `DEMO_MODE=true` and prominently labeled, first tests added.
+> Claim level: **built** — not live-proven against real Redis/GitHub.
 
 <!-- workshown-header -->
 [![Workshown](https://img.shields.io/badge/Workshown-member-0b7285)](https://sgharlow.github.io/ai-control-framework/)
