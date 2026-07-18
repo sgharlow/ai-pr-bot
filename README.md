@@ -1,5 +1,17 @@
 > ⚠️ **Under repair (2026-07-18)** — a portfolio audit found this repo has never compiled as committed (several modules were never pushed). A verified repair is in progress on a dedicated branch; until it lands, treat the code as design reference, not runnable. No claim without a check.
 
+<!-- workshown-header -->
+[![Workshown](https://img.shields.io/badge/Workshown-member-0b7285)](https://sgharlow.github.io/ai-control-framework/)
+**Part of [Workshown](https://sgharlow.github.io/ai-control-framework/) — show your work.**
+[ai-control-framework](https://github.com/sgharlow/ai-control-framework) (the how) ·
+[orchestra-lite](https://github.com/sgharlow/orchestra-lite) (the scale) ·
+[ai-pr-bot](https://github.com/sgharlow/ai-pr-bot) (the enforcement) ·
+[skillcrossroads](https://github.com/sgharlow/skillcrossroads) (the grade) ·
+[recipes](https://github.com/sgharlow/claude-code-recipes) (the front door) ·
+[case study](https://github.com/sgharlow/distraction)
+<!-- /workshown-header -->
+
+
 🚨 AI Code Review Bot - Your Security Guardian Angel 🤖
 Boot.dev Hackathon 2025 Entry
 🔗 GitHub: https://github.com/sgharlow/ai-pr-bot
