@@ -1,79 +1,59 @@
+// NOTE (repair 2026-07-18): this barrel previously re-exported four modules that
+// were never committed and have zero consumers anywhere in the repo — job-monitor,
+// job-status-tracker, metrics-aggregator, retry-strategies. Those re-exports were
+// removed rather than fabricating a monitoring stack. It also branched on
+// hard-forced demo flags (`process.env.DEMO_MODE === 'true' || true`) between the
+// EnhancedDemoProcessorSimple path and never-committed DemoProcessor /
+// EnhancedDemoProcessor / PRAnalysisProcessor modules; only the branch that could
+// ever execute — EnhancedDemoProcessorSimple (in ./processors/pr-processor.ts) —
+// is kept, with the original intent documented at the registration site.
 export * from './types';
 export * from './queue-manager';
 export * from './enhanced-queue-manager';
-export * from './job-monitor';
-export * from './job-status-tracker';
-export * from './metrics-aggregator';
-export * from './retry-strategies';
 export * from './processors';
 
 import { QueueManager } from './queue-manager';
 import { EnhancedQueueManager, MonitoringConfig } from './enhanced-queue-manager';
 import { QueueConfig, JobType } from './types';
-import { 
-  PRAnalysisProcessor,
+import {
   CodeAnalysisProcessor,
   FixGenerationProcessor,
   NotificationProcessor,
   CommentPostingProcessor,
-  CostTrackingProcessor
+  CostTrackingProcessor,
+  EnhancedDemoProcessorSimple
 } from './processors';
-import { DemoProcessor } from './processors/demo-processor';
-import { EnhancedDemoProcessor } from './processors/enhanced-demo-processor';
-import { EnhancedDemoProcessorSimple } from './processors/enhanced-demo-processor-simple';
+
+interface QueueSystemDependencies {
+  githubClient: any;
+  diffAnalyzer: any;
+  codeAnalyzer: any;
+  fixGenerator: any;
+  fixValidator: any;
+  slackClient?: any;
+  discordClient?: any;
+  aiService?: any;
+}
 
 /**
- * Create and configure the queue system
+ * Register all job processors on a queue manager.
+ * Shared by both factories below (their bodies were identical apart from the
+ * concrete manager class).
  */
-export function createQueueSystem(
-  config: QueueConfig,
-  dependencies: {
-    githubClient: any;
-    diffAnalyzer: any;
-    codeAnalyzer: any;
-    fixGenerator: any;
-    fixValidator: any;
-    slackClient?: any;
-    discordClient?: any;
-    aiService?: any;
-  }
-): QueueManager {
-  const queueManager = new QueueManager(config);
-
-  // HACKATHON DEMO: Use enhanced demo processor
-  const USE_DEMO_MODE = process.env.DEMO_MODE === 'true' || true; // Force demo mode
-  const USE_ENHANCED_DEMO = process.env.ENHANCED_DEMO === 'true' || true; // Use enhanced demo
-  
-  if (USE_DEMO_MODE) {
-    if (USE_ENHANCED_DEMO) {
-      // Use enhanced demo processor (simplified version for hackathon)
-      const enhancedDemoProcessor = new EnhancedDemoProcessorSimple(
-        dependencies.githubClient
-      );
-      queueManager.registerProcessor(
-        JobType.PR_ANALYSIS,
-        enhancedDemoProcessor.createProcessor()
-      );
-    } else {
-      // Use simple demo processor
-      const demoProcessor = new DemoProcessor(dependencies.githubClient);
-      queueManager.registerProcessor(
-        JobType.PR_ANALYSIS,
-        demoProcessor.createProcessor()
-      );
-    }
-  } else {
-    // Register PR analysis processor
-    const prAnalysisProcessor = new PRAnalysisProcessor(
-      dependencies.githubClient,
-      dependencies.diffAnalyzer,
-      queueManager
-    );
-    queueManager.registerProcessor(
-      JobType.PR_ANALYSIS,
-      prAnalysisProcessor.createProcessor()
-    );
-  }
+function registerProcessors(
+  queueManager: QueueManager,
+  dependencies: QueueSystemDependencies
+): void {
+  // HACKATHON DEMO: the original hard-forced demo mode for PR analysis
+  // (USE_DEMO_MODE / USE_ENHANCED_DEMO were `|| true`); the demo processor is the
+  // only PR_ANALYSIS processor that ever existed in the repo.
+  const enhancedDemoProcessor = new EnhancedDemoProcessorSimple(
+    dependencies.githubClient
+  );
+  queueManager.registerProcessor(
+    JobType.PR_ANALYSIS,
+    enhancedDemoProcessor.createProcessor()
+  );
 
   // Register code analysis processor
   const codeAnalysisProcessor = new CodeAnalysisProcessor(
@@ -121,7 +101,17 @@ export function createQueueSystem(
     JobType.COST_TRACKING,
     costTrackingProcessor.createProcessor()
   );
+}
 
+/**
+ * Create and configure the queue system
+ */
+export function createQueueSystem(
+  config: QueueConfig,
+  dependencies: QueueSystemDependencies
+): QueueManager {
+  const queueManager = new QueueManager(config);
+  registerProcessors(queueManager, dependencies);
   return queueManager;
 }
 
@@ -130,102 +120,11 @@ export function createQueueSystem(
  */
 export function createEnhancedQueueSystem(
   config: QueueConfig,
-  dependencies: {
-    githubClient: any;
-    diffAnalyzer: any;
-    codeAnalyzer: any;
-    fixGenerator: any;
-    fixValidator: any;
-    slackClient?: any;
-    discordClient?: any;
-    aiService?: any;
-  },
+  dependencies: QueueSystemDependencies,
   monitoringConfig?: MonitoringConfig
 ): EnhancedQueueManager {
   const queueManager = new EnhancedQueueManager(config, monitoringConfig);
-
-  // HACKATHON DEMO: Use enhanced demo processor
-  const USE_DEMO_MODE = process.env.DEMO_MODE === 'true' || true; // Force demo mode
-  const USE_ENHANCED_DEMO = process.env.ENHANCED_DEMO === 'true' || true; // Use enhanced demo
-  
-  if (USE_DEMO_MODE) {
-    if (USE_ENHANCED_DEMO) {
-      // Use enhanced demo processor (simplified version for hackathon)
-      const enhancedDemoProcessor = new EnhancedDemoProcessorSimple(
-        dependencies.githubClient
-      );
-      queueManager.registerProcessor(
-        JobType.PR_ANALYSIS,
-        enhancedDemoProcessor.createProcessor()
-      );
-    } else {
-      // Use simple demo processor
-      const demoProcessor = new DemoProcessor(dependencies.githubClient);
-      queueManager.registerProcessor(
-        JobType.PR_ANALYSIS,
-        demoProcessor.createProcessor()
-      );
-    }
-  } else {
-    // Register PR analysis processor
-    const prAnalysisProcessor = new PRAnalysisProcessor(
-      dependencies.githubClient,
-      dependencies.diffAnalyzer,
-      queueManager
-    );
-    queueManager.registerProcessor(
-      JobType.PR_ANALYSIS,
-      prAnalysisProcessor.createProcessor()
-    );
-  }
-
-  // Register code analysis processor
-  const codeAnalysisProcessor = new CodeAnalysisProcessor(
-    dependencies.codeAnalyzer,
-    queueManager
-  );
-  queueManager.registerProcessor(
-    JobType.CODE_ANALYSIS,
-    codeAnalysisProcessor.createProcessor()
-  );
-
-  // Register fix generation processor
-  const fixGenerationProcessor = new FixGenerationProcessor(
-    dependencies.fixGenerator,
-    dependencies.fixValidator,
-    queueManager
-  );
-  queueManager.registerProcessor(
-    JobType.FIX_GENERATION,
-    fixGenerationProcessor.createProcessor()
-  );
-
-  // Register notification processor
-  const notificationProcessor = new NotificationProcessor(
-    dependencies.slackClient,
-    dependencies.discordClient
-  );
-  queueManager.registerProcessor(
-    JobType.NOTIFICATION,
-    notificationProcessor.createProcessor()
-  );
-
-  // Register comment posting processor
-  const commentPostingProcessor = new CommentPostingProcessor(
-    dependencies.githubClient
-  );
-  queueManager.registerProcessor(
-    JobType.COMMENT_POSTING,
-    commentPostingProcessor.createProcessor()
-  );
-
-  // Register cost tracking processor
-  const costTrackingProcessor = new CostTrackingProcessor();
-  queueManager.registerProcessor(
-    JobType.COST_TRACKING,
-    costTrackingProcessor.createProcessor()
-  );
-
+  registerProcessors(queueManager, dependencies);
   return queueManager;
 }
 
@@ -236,7 +135,7 @@ export const defaultQueueConfig: QueueConfig = {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
+    ...(process.env.REDIS_PASSWORD !== undefined ? { password: process.env.REDIS_PASSWORD } : {}),
     db: parseInt(process.env.REDIS_DB || '0'),
     tls: process.env.REDIS_TLS === 'true'
   },

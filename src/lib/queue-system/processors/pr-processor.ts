@@ -13,9 +13,23 @@ export class EnhancedDemoProcessorSimple {
 
   createProcessor(): JobProcessor<PRAnalysisJobData> {
     return async (job: Job<PRAnalysisJobData>) => {
-      console.log(`[EnhancedDemoProcessor] Starting AI-powered analysis for PR #${job.data.prNumber}`);
-      const { repository, pullRequest } = job.data;
-      
+      // Drift fixes 2026-07-18: PRAnalysisJobData has no prNumber field (the PR
+      // number lives at pullRequest.number), and installationId is optional in the
+      // contract — without it no GitHub App call can be authenticated, so the job
+      // fails explicitly instead of passing undefined onward.
+      const { repository, pullRequest, installationId } = job.data;
+      console.log(`[EnhancedDemoProcessor] Starting AI-powered analysis for PR #${pullRequest.number}`);
+
+      if (installationId === undefined) {
+        return {
+          success: false,
+          error: {
+            code: 'MISSING_INSTALLATION_ID',
+            message: `PR analysis job for ${repository.fullName}#${pullRequest.number} has no installationId; cannot authenticate GitHub App calls`
+          }
+        };
+      }
+
       try {
         // Fetch PR files
         console.log(`[EnhancedDemoProcessor] Fetching changed files...`);
@@ -23,7 +37,7 @@ export class EnhancedDemoProcessorSimple {
           repository.owner,
           repository.name,
           pullRequest.number,
-          job.data.installationId
+          installationId
         );
         
         console.log(`[EnhancedDemoProcessor] Found ${files.length} changed files`);
@@ -120,7 +134,7 @@ export class EnhancedDemoProcessorSimple {
           repository.name,
           pullRequest.number,
           { body: comment },
-          job.data.installationId
+          installationId
         );
         
         // Post inline comments for critical issues
@@ -137,7 +151,7 @@ export class EnhancedDemoProcessorSimple {
                 line: finding.line,
                 side: 'RIGHT'
               },
-              job.data.installationId
+              installationId
             );
             console.log(`[EnhancedDemoProcessor] Posted inline comment for ${finding.severity} issue`);
           } catch (e) {

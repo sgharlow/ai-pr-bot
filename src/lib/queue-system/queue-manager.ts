@@ -46,8 +46,29 @@ export class QueueManager extends EventEmitter implements IQueueManager {
     const queueConfig = this.config.queues[type] || {};
     const defaultOptions = this.config.defaultJobOptions || {};
 
+    // Drift fixes 2026-07-18 for the installed bull v4 API:
+    // - QueueConfig.redis.tls is a boolean in this repo's contract; ioredis expects
+    //   a ConnectionOptions object, so `true` maps to `{}` (TLS with defaults).
+    // - Rate limiting is a constructor option (QueueOptions.limiter), not a
+    //   writable `queue.limiter` property.
+    // - Concurrency is not a queue property either; it is applied where the
+    //   processor is registered (queue.process(concurrency, fn) below).
     const queue = new Bull(type, {
-      redis: this.config.redis,
+      redis: {
+        host: this.config.redis.host,
+        port: this.config.redis.port,
+        ...(this.config.redis.password !== undefined ? { password: this.config.redis.password } : {}),
+        ...(this.config.redis.db !== undefined ? { db: this.config.redis.db } : {}),
+        ...(this.config.redis.tls ? { tls: {} } : {})
+      },
+      ...(queueConfig.rateLimit
+        ? {
+            limiter: {
+              max: queueConfig.rateLimit.max,
+              duration: queueConfig.rateLimit.duration
+            }
+          }
+        : {}),
       defaultJobOptions: {
         ...defaultOptions,
         removeOnComplete: true,
@@ -59,19 +80,6 @@ export class QueueManager extends EventEmitter implements IQueueManager {
         }
       }
     });
-
-    // Set concurrency
-    if (queueConfig.concurrency) {
-      queue.concurrency = queueConfig.concurrency;
-    }
-
-    // Set rate limiting
-    if (queueConfig.rateLimit) {
-      queue.limiter = {
-        max: queueConfig.rateLimit.max,
-        duration: queueConfig.rateLimit.duration
-      };
-    }
 
     return queue;
   }
@@ -188,10 +196,11 @@ export class QueueManager extends EventEmitter implements IQueueManager {
     const queueConfig = this.config.queues[type] || {};
     const defaultPriority = queueConfig.defaultPriority || JobPriority.NORMAL;
 
+    // Drift fix 2026-07-18: bull v4 JobOptions has no `timestamp` field (bull
+    // stamps job.timestamp itself when the job is created).
     const jobOptions: JobOptions = {
       priority: defaultPriority,
-      ...options,
-      timestamp: Date.now()
+      ...options
     };
 
     const job = await queue.add(data, jobOptions);
@@ -254,7 +263,9 @@ export class QueueManager extends EventEmitter implements IQueueManager {
           statusJobs = await queue.getDelayed(start, end);
           break;
         case JobStatus.PAUSED:
-          statusJobs = await queue.getPaused(start, end);
+          // Drift fix 2026-07-18: bull v4 has no getPaused(); the typed API for
+          // listing paused jobs is getJobs(['paused'], ...).
+          statusJobs = await queue.getJobs(['paused'], start, end);
           break;
       }
       
