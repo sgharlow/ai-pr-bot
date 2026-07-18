@@ -38,7 +38,10 @@ export async function createApp(options: FastifyServerOptions = {}): Promise<Fas
     maxTokens: 4000,
     temperature: 0.2
   });
-  const webhookService = new WebhookService(githubClient, aiService);
+  // Drift fix 2026-07-18: WebhookService's contract takes { queueManager? }, not
+  // (githubClient, aiService). Simple mode runs without a queue manager; the service
+  // logs a warning and skips queueing (its existing documented behavior).
+  const webhookService = new WebhookService();
 
   // Store services on app instance
   app.decorate('githubClient', githubClient);

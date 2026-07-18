@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { WebhookValidator } from './validator';
 import { WebhookDeduplicator } from './deduplicator';
@@ -247,12 +248,14 @@ export class WebhookService {
     console.log(`Queueing PR #${event.pullRequest.number} for analysis...`);
 
     try {
-      // Queue the job
+      // Queue the job. Drift fix 2026-07-18: the original object carried extra
+      // prNumber/prTitle/action fields not in the PRAnalysisJobData contract and
+      // omitted the required BaseJobData.id — callers adapt to the contract, the
+      // contract does not grow to fit callers. `action` is preserved in metadata.
       await this.queueManager.addJob(
         JobType.PR_ANALYSIS,
         {
-          prNumber: event.pullRequest.number,
-          prTitle: event.pullRequest.title,
+          id: randomUUID(),
           repository: {
             owner: event.repository.split('/')[0],
             name: event.repository.split('/')[1],
@@ -267,8 +270,8 @@ export class WebhookService {
             sha: event.pullRequest.sha
           },
           installationId: event.installationId,
-          action: event.action,
-          timestamp: new Date()
+          timestamp: new Date(),
+          metadata: { action: event.action }
         },
         {
           priority: JobPriority.HIGH,
