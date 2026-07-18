@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { WebhookValidator } from './validator';
 import { WebhookDeduplicator } from './deduplicator';
@@ -134,7 +135,10 @@ export class WebhookService {
           title: (payload as any).pull_request?.title,
           url: (payload as any).pull_request?.html_url,
           diffUrl: (payload as any).pull_request?.diff_url,
-          author: (payload as any).pull_request?.user?.login
+          author: (payload as any).pull_request?.user?.login,
+          baseBranch: (payload as any).pull_request?.base?.ref,
+          headBranch: (payload as any).pull_request?.head?.ref,
+          sha: (payload as any).pull_request?.head?.sha
         } : undefined,
         installationId: (payload as any).installation?.id,
         payload
@@ -244,12 +248,14 @@ export class WebhookService {
     console.log(`Queueing PR #${event.pullRequest.number} for analysis...`);
 
     try {
-      // Queue the job
+      // Queue the job. Drift fix 2026-07-18: the original object carried extra
+      // prNumber/prTitle/action fields not in the PRAnalysisJobData contract and
+      // omitted the required BaseJobData.id — callers adapt to the contract, the
+      // contract does not grow to fit callers. `action` is preserved in metadata.
       await this.queueManager.addJob(
         JobType.PR_ANALYSIS,
         {
-          prNumber: event.pullRequest.number,
-          prTitle: event.pullRequest.title,
+          id: randomUUID(),
           repository: {
             owner: event.repository.split('/')[0],
             name: event.repository.split('/')[1],
@@ -258,13 +264,14 @@ export class WebhookService {
           pullRequest: {
             number: event.pullRequest.number,
             title: event.pullRequest.title,
-            url: event.pullRequest.url,
-            diffUrl: event.pullRequest.diffUrl,
-            author: event.pullRequest.author
+            author: event.pullRequest.author,
+            baseBranch: event.pullRequest.baseBranch,
+            headBranch: event.pullRequest.headBranch,
+            sha: event.pullRequest.sha
           },
           installationId: event.installationId,
-          action: event.action,
-          timestamp: new Date().toISOString()
+          timestamp: new Date(),
+          metadata: { action: event.action }
         },
         {
           priority: JobPriority.HIGH,

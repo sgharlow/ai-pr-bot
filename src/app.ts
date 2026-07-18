@@ -62,7 +62,9 @@ export async function createApp(options: FastifyServerOptions = {}): Promise<Fas
   });
 
   // Initialize queue system dependencies
-  const diffAnalyzer = new DiffAnalyzer(githubClient);
+  // Drift fix 2026-07-18: the simple DiffAnalyzer takes no constructor args
+  // (worker.ts already constructs it this way).
+  const diffAnalyzer = new DiffAnalyzer();
   const codeAnalyzer = new CodeAnalyzer();
   const fixGenerator = new FixGenerator(aiService);
   const fixValidator = new FixValidator();
