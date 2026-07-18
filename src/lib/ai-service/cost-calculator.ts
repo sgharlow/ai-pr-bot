@@ -5,8 +5,11 @@
  *
  * Pricing constants are OpenAI's published per-1K-token prices (openai.com/api/pricing,
  * as of the models this repo references in config: 'gpt-4' and 'gpt-4-turbo-preview').
- * Unknown models FALL BACK to gpt-4 pricing (the most expensive listed) — fail-closed:
- * the cost-limit guard in EnhancedAIService must overestimate, never underestimate.
+ * Unknown models FALL BACK to the most expensive listed pricing (computed from the
+ * table, so it stays true as prices are edited) — fail-closed: the cost-limit guard
+ * in EnhancedAIService must overestimate, never underestimate. (F2 fix 2026-07-18:
+ * this previously fell back to gpt-4 while claiming "most expensive" — gpt-4-32k
+ * costs 2x more; the guarantee is now computed, not asserted.)
  */
 
 import { TokenUsage, CostCalculation } from './types';
@@ -27,8 +30,11 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   'gpt-3.5-turbo': { inputCostPer1k: 0.0005, outputCostPer1k: 0.0015 }
 };
 
-/** Fail-closed default for unknown models (see header). */
-const FALLBACK_PRICING: ModelPricing = MODEL_PRICING['gpt-4'];
+/** Fail-closed default for unknown models: the most expensive listed pricing,
+ * computed from the table so the guarantee cannot silently rot (see header). */
+const FALLBACK_PRICING: ModelPricing = Object.values(MODEL_PRICING).reduce((max, p) =>
+  p.inputCostPer1k + p.outputCostPer1k > max.inputCostPer1k + max.outputCostPer1k ? p : max
+);
 
 export class CostCalculator {
   /**

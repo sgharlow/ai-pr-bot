@@ -18,7 +18,26 @@ export class EnhancedDemoProcessorSimple {
       // contract — without it no GitHub App call can be authenticated, so the job
       // fails explicitly instead of passing undefined onward.
       const { repository, pullRequest, installationId } = job.data;
-      console.log(`[EnhancedDemoProcessor] Starting AI-powered analysis for PR #${pullRequest.number}`);
+
+      // F1 (review of PR #1, 2026-07-18): this processor posts CANNED SAMPLE findings —
+      // the real analysis pipeline is not yet live-wired. Structurally fail-closed:
+      // without an explicit DEMO_MODE=true, it posts NOTHING and the job fails with the
+      // reason, so a default deployment can never present fabricated findings as analysis.
+      // When enabled, every posted comment is prominently labeled as demo output.
+      if (process.env.DEMO_MODE !== 'true') {
+        return {
+          success: false,
+          error: {
+            code: 'DEMO_MODE_DISABLED',
+            message:
+              `PR analysis for ${repository.fullName}#${pullRequest.number} refused: the real ` +
+              `analysis pipeline is not live-wired and this processor only produces labeled ` +
+              `sample output. Set DEMO_MODE=true to post clearly-labeled demo reviews.`
+          }
+        };
+      }
+
+      console.log(`[EnhancedDemoProcessor] Starting DEMO analysis for PR #${pullRequest.number} (DEMO_MODE=true)`);
 
       if (installationId === undefined) {
         return {
@@ -208,6 +227,8 @@ export class EnhancedDemoProcessorSimple {
   }
 
   private buildInlineComment(finding: any): string {
+    // Every inline demo comment self-identifies (F1): no fabricated finding may
+    // present as a real analysis of the code it is attached to.
     const iconMap = {
       critical: '🚨',
       high: '⚠️',
@@ -217,7 +238,9 @@ export class EnhancedDemoProcessorSimple {
     
     const icon = iconMap[finding.severity as keyof typeof iconMap] || '📝';
     
-    return `${icon} **${finding.severity.toUpperCase()}: ${finding.message}**
+    return `> ⚠️ **Demo sample — not a real finding about this code** (\`DEMO_MODE\`)
+
+${icon} **${finding.severity.toUpperCase()}: ${finding.message}**
 
 ${finding.details}
 
@@ -248,7 +271,11 @@ ${finding.cwe ? `**Reference:** ${finding.cwe}${finding.owasp ? ` | ${finding.ow
     const overallScore = this.calculateCodeScore(findings);
     const scoreEmoji = overallScore >= 80 ? '🟢' : overallScore >= 60 ? '🟡' : '🔴';
 
-    return `## 🤖 AI Code Review Report
+    return `> ⚠️ **DEMO OUTPUT — these are canned sample findings, not an analysis of this
+> pull request's code.** This bot is running in demo mode (\`DEMO_MODE=true\`) to showcase
+> the report format; the real analysis pipeline is not yet live-wired.
+
+## 🤖 AI Code Review Report (demo sample)
 
 ### 📊 Analysis Summary
 - **Files analyzed**: ${filesCount}
